@@ -1,0 +1,175 @@
+#include "mainwindow.h"
+#include "mainwindow.h"
+#include "ui_mainwindow.h"
+#include <QKeyEvent>
+#include<QFile>
+#include <QCoreApplication>
+#include <qstring.h>
+#include <QString>
+#include <QMessageBox>
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
+    ,m_ptrStuSql(nullptr)
+{
+    ui->setupUi(this);
+    auto f = [&]{
+        this->show();
+    };
+    m_dlgLogin.show();
+    connect(&m_dlgLogin,&login::sendLoginSuccess,this,f);
+    ui->treeWidget->clear();
+    ui->treeWidget->setColumnCount(1);
+    QStringList l;
+    l<<"图书管理系统";
+    QTreeWidgetItem *pf = new QTreeWidgetItem(ui->treeWidget,l);
+     ui->treeWidget->addTopLevelItem(pf);
+    l.clear();
+    l<<"访客图书管理";
+    QTreeWidgetItem *p1 = new QTreeWidgetItem(pf,l);
+    l.clear();
+    l<<"管理员图书管理";
+    QTreeWidgetItem *p2 = new QTreeWidgetItem(pf,l);
+    pf->addChild(p1);
+    pf->addChild(p2);
+    ui->treeWidget->expandAll();
+    m_ptrStuSql = stuSql::getinstance();
+    m_ptrStuSql->init();
+    updateTable();
+}
+
+MainWindow::~MainWindow()
+{
+    delete ui;
+}
+
+void MainWindow::on_bt_main_exit_clicked()
+{
+       exit(0);
+}
+
+void MainWindow::on_btn_simlation_clicked()
+{
+    //制作二十个条数据
+    int i;
+    for (i=0;i<20;i++) {
+        StuInfo info;
+        if(i%3){
+        info.sno = QString("%1").arg(i);
+        }
+        if(i%7){
+            info.sname = QString("李%1").arg(i);
+        }
+        if(i%2){
+            info.ssex = QString("%1").arg(i);
+        }
+         m_ptrStuSql->addStu(info);
+    }
+
+
+}
+
+void MainWindow::on_btn_add_clicked()
+{
+    m_dlgAddStu.setType(true);
+    m_dlgAddStu.exec();
+    updateTable();
+}
+
+void MainWindow::on_btn_clear_clicked()
+{
+    m_ptrStuSql->clearStuTable();
+    updateTable();
+}
+
+void MainWindow::updateTable()
+{
+    ui->tableWidget_2->clear();
+    ui->tableWidget_2->setColumnCount(5);
+    QStringList l;
+    l<<"sno"<<"sname"<<"ssex"<<"sage"<<"phone";
+    ui->tableWidget_2->setHorizontalHeaderLabels(l);
+    ui->tableWidget_2->setSelectionBehavior(QAbstractItemView::SelectRows);
+    ui->tableWidget_2->setSelectionMode(QAbstractItemView::SingleSelection);
+    ui->tableWidget_2->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    auto cnt =  m_ptrStuSql->getStuCnt();
+    ui->lb_cnt->setText(QString("数量：%1").arg(cnt));
+    QList<StuInfo> lStudents = m_ptrStuSql->getPageStu(0,cnt);
+    ui->tableWidget_2->setRowCount(cnt);
+    for(int i = 0;i<lStudents.size();i++){
+       ui->tableWidget_2->setItem(i,0,new QTableWidgetItem(lStudents[i].sno));
+       ui->tableWidget_2->setItem(i,1,new QTableWidgetItem(lStudents[i].sname));
+       ui->tableWidget_2->setItem(i,2,new QTableWidgetItem(lStudents[i].ssex));
+       ui->tableWidget_2->setItem(i,3,new QTableWidgetItem(QString::number(lStudents[i].sage)));
+       ui->tableWidget_2->setItem(i,4,new QTableWidgetItem(lStudents[i].phone));
+    }
+}
+/*
+    首先清空tablewidget，然后设置stuinfo的List和l，设置l的属性和cnt列数并创建lstudent对象，然后循环打印。
+*/
+void MainWindow::on_btn_refresh_clicked()
+{
+    updateTable();
+}
+
+void MainWindow::on_btn_delete_clicked()
+{
+   int i =  ui->tableWidget_2->currentRow();
+   if(i>=0){
+      int id = ui->tableWidget_2->item(i,0)->text().toUInt();//获取id然后数据库删除
+      QString Strid = QString::number(id);
+       m_ptrStuSql->delStu(Strid);
+       updateTable();
+       QMessageBox::information(nullptr,"信息","删除成功");
+   }
+
+
+}
+
+void MainWindow::on_btn_update_clicked()
+{
+    StuInfo info;
+    int i = ui->tableWidget_2->currentRow();
+    if(i>=0){
+        info.sno = ui->tableWidget_2->item(i,0)->text();
+        info.sname = ui->tableWidget_2->item(i,1)->text();
+        info.ssex = ui->tableWidget_2->item(i,2)->text();
+        info.sage = ui->tableWidget_2->item(i,3)->text().toUInt();
+        info.phone = ui->tableWidget_2->item(i,4)->text();
+        m_dlgAddStu.setType(false,info);
+        m_dlgAddStu.exec();
+     }
+    updateTable();
+}
+
+void MainWindow::on_btn_search_clicked()
+{
+    QString strFilter = ui->le_search->text();
+    if(strFilter.isEmpty()){
+        QMessageBox::information(nullptr,"警告","内容为空");
+        return;
+    }
+    ui->tableWidget_2->clear();
+    ui->tableWidget_2->setColumnCount(5);
+    QStringList l;
+    l<<"sno"<<"sname"<<"ssex"<<"sage"<<"phone";
+    ui->tableWidget_2->setHorizontalHeaderLabels(l);
+    auto cnt =  m_ptrStuSql->getStuCnt();
+    ui->lb_cnt->setText(QString("数量：%1").arg(cnt));
+    QList<StuInfo> lStudents = m_ptrStuSql->getPageStu(0,cnt);
+
+
+    int index = 0;
+    for(int i = 0;i<lStudents.size();i++){
+        if(!lStudents[i].sname.contains(strFilter)){
+            continue;
+        }
+       ui->tableWidget_2->setItem(index,0,new QTableWidgetItem(lStudents[i].sno));
+       ui->tableWidget_2->setItem(index,1,new QTableWidgetItem(lStudents[i].sname));
+       ui->tableWidget_2->setItem(index,2,new QTableWidgetItem(lStudents[i].ssex));
+       ui->tableWidget_2->setItem(index,3,new QTableWidgetItem(QString::number(lStudents[i].sage)));
+       ui->tableWidget_2->setItem(index,4,new QTableWidgetItem(lStudents[i].phone));
+       index ++;
+    }
+    ui->tableWidget_2->setRowCount(index);
+}

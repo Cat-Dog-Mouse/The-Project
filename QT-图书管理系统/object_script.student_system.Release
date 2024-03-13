@@ -1,0 +1,12 @@
+INPUT(
+./release\dlg_addstu.o
+./release\login.o
+./release\main.o
+./release\mainwindow.o
+./release\stusql.o
+./release\qrc_res.o
+./release\moc_dlg_addstu.o
+./release\moc_login.o
+./release\moc_mainwindow.o
+./release\moc_stusql.o
+);

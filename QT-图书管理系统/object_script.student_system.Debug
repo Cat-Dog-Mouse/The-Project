@@ -1,0 +1,12 @@
+INPUT(
+./debug\dlg_addstu.o
+./debug\login.o
+./debug\main.o
+./debug\mainwindow.o
+./debug\stusql.o
+./debug\qrc_res.o
+./debug\moc_dlg_addstu.o
+./debug\moc_login.o
+./debug\moc_mainwindow.o
+./debug\moc_stusql.o
+);
